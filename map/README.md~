@@ -1,9 +1,8 @@
 ##Map
-nav_msgs/OccupancyGrid
-`
-std_msgs/Header header
-  uint32 seq
-  time stamp
+nav_msgs/OccupancyGrid__
+std_msgs/Header header__
+  uint32 seq__
+  time stamp__
   string frame_id
 nav_msgs/MapMetaData info
   time map_load_time
@@ -21,4 +20,3 @@ nav_msgs/MapMetaData info
       float64 z
       float64 w
 int8[] data
-`

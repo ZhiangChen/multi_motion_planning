@@ -1,8 +1,5 @@
 # multi_motion_planning
 
-Your description goes here
+rosrun rviz rviz -d `rospack find stage_ros`/rviz/stage.rviz
 
-## Example usage
-
-## Running tests/demos
-    
+http://wiki.ros.org/stage_ros

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<launch>
+<node pkg="tf" type="static_transform_publisher" name="map_to_robot0" args="2 2 0 0 0 0 map /robot0/odom0 10"/>
+<node pkg="tf" type="static_transform_publisher" name="map_to_robot1" args="5 5 0 0 0 0 map /robot1/odom1 10"/>
+</launch>
+
+

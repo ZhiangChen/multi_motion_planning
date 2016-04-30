@@ -7,14 +7,24 @@ using namespace std;
 
 nav_msgs::OccupancyGrid g_map;
 bool got_map = false;
+int g_width;
+int g_height;
+double g_rsl;
+double g_x;
+double g_y;
 void myCallback(const nav_msgs::OccupancyGrid& map) 
 { 
 
   ROS_INFO("received the map."); 
   g_map = map;
-  ROS_INFO("Width x Height: (%d x %d)", g_map.info.width, g_map.info.height);
-  ROS_INFO("Origin: (%f, %f)", g_map.info.origin.position.x, g_map.info.origin.position.y);
-  ROS_INFO("Resoluntion: %f",g_map.info.resolution);
+  g_width = g_map.info.width;
+  g_height = g_map.info.height;
+  ROS_INFO("Width x Height: (%d x %d)", g_width, g_height);
+  g_x = g_map.info.origin.position.x;
+  g_y = g_map.info.origin.position.y;
+  ROS_INFO("Origin: (%f, %f)", g_x, g_y);
+  g_rsl = g_map.info.resolution;
+  ROS_INFO("Resoluntion: %f",g_rsl);
   int n = g_map.data.size();
   ROS_INFO("Points: %d", n);
   geometry_msgs::PointStamped pt;
@@ -30,19 +40,18 @@ int main(int argc, char **argv)
   ros::Subscriber my_subscriber_object= n.subscribe("/map",1,myCallback); 
   ros::Publisher map_pub = n.advertise<nav_msgs::OccupancyGrid>("/my_map", 1);
 
-  int x;
-  char y;
+  double x,y;
+  int i_x,i_y;
   while(ros::ok())
   {
     ros::spinOnce(); 
     if(got_map)
     {
       cout<<"Input the point's position: ";
-      cin>>x;
-      cout<<"Input the occupancy: ";
-      cin>>y;
-      g_map.data[x] = y;
-      map_pub.publish(g_map); 
+      cin>>x>>y;
+      i_x = (x-g_x)/g_rsl;
+      i_y = (y-g_y)/g_rsl;
+      cout<<"Occupancy: "<<int(g_map.data[g_width * (i_y)+ i_x])<<endl; 
     }
   }
   

@@ -49,7 +49,7 @@ struct Tree
 {
 	std::vector<Vertex> vertexs;
 	std::vector<Edge> edges;
-	nav_msgs::Path displayTree();
+	nav_msgs::Path getTree();
 }
 
 class RRT

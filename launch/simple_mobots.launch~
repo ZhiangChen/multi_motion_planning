@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<launch>
-<include file ="$(find gazebo_ros)/launch/empty_world.launch"/>
-<node name="spawn_robot" pkg="gazebo_ros" type="spawn_model" args="-file $(find multi_motion_planning)/urdf/simple_mobots.urdf -urdf -model simple_mobots"/>
-<param name="robot_description" textfile="$(find multi_motion_planning)/urdf/simple_mobots.urdf"/>
-</launch>

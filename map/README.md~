@@ -1,22 +1,22 @@
 ##Map
-nav_msgs/OccupancyGrid__
-std_msgs/Header header__
-  uint32 seq__
-  time stamp__
-  string frame_id
-nav_msgs/MapMetaData info
-  time map_load_time
-  float32 resolution
-  uint32 width
-  uint32 height
-  geometry_msgs/Pose origin
-    geometry_msgs/Point position
-      float64 x
-      float64 y
-      float64 z
-    geometry_msgs/Quaternion orientation
-      float64 x
-      float64 y
-      float64 z
-      float64 w
-int8[] data
+nav_msgs/OccupancyGrid  
+std_msgs/Header header  
+  uint32 seq  
+  time stamp  
+  string frame_id  
+nav_msgs/MapMetaData info  
+  time map_load_time  
+  float32 resolution  
+  uint32 width  
+  uint32 height  
+  geometry_msgs/Pose origin  
+    geometry_msgs/Point position  
+      float64 x  
+      float64 y  
+      float64 z  
+    geometry_msgs/Quaternion orientation  
+      float64 x  
+      float64 y  
+      float64 z  
+      float64 w  
+int8[] data  

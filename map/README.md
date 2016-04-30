@@ -1,5 +1,5 @@
 ##Map
-nav_msgs/OccupancyGrid  
+#nav_msgs/OccupancyGrid  
 std_msgs/Header header  
   uint32 seq  
   time stamp  
@@ -20,3 +20,4 @@ nav_msgs/MapMetaData info
       float64 z  
       float64 w  
 int8[] data  
+data are from the origin of the map, along x.

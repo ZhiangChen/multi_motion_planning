@@ -25,7 +25,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.*/
 
-
+#include <geometry_msgs/Point>
 
 #ifndef RRT_H_
 #define RRT_H_
@@ -34,14 +34,22 @@ class RRT
 {
 public:
 	RRT(int nm);
-	void setInit();
+	void configInit(int n_q_rand, double step_size);
 	void setGoal(double x, double y, int index);
 	bool runRRT();
 	bool getPath();
 	bool getPaht2();
 	bool displayTrees();
 private:
+	void buildRRT();
+	void extendRRT();
+	void connectRRT();
+	void mergeRRT();
+	
 	int nm_; 
+	bool got_config_;
+	bool got_goal_;
+	bool got_path_;
 
 };
 

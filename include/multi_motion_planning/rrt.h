@@ -25,22 +25,48 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.*/
 
-#include <geometry_msgs/Point>
+#include <geometry_msgs/Point.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <nav_msgs/Path.h>
+#include <geometry_msgs/PolygonStamped.h>
 
 #ifndef RRT_H_
 #define RRT_H_
+
+struct Vertex
+{
+	geometry_msgs::PointStamped point;
+	int connectivity;
+}
+
+struct Edge
+{
+	geometry_msgs::PointStamped start_point;
+	geometry_msgs::PointStamped end_point;
+}
+
+struct Tree
+{
+	std::vector<Vertex> vertexs;
+	std::vector<Edge> edges;
+	nav_msgs::Path displayTree();
+}
 
 class RRT
 {
 public:
 	RRT(int nm);
 	void configInit(int n_q_rand, double step_size);
-	void setGoal(double x, double y, int index);
+	void setGoal(geometry_msgs::PoseStamped goal, int index);
 	bool runRRT();
-	bool getPath();
-	bool getPaht2();
+	bool getPath(nav_msgs::Path &path);
+	bool getPaht2(nav_msgs::Path &path);
 	bool displayTrees();
 private:
+	void getMap();
+	void getCSpace();
+	bool checkCollision();
+	
 	void buildRRT();
 	void extendRRT();
 	void connectRRT();
@@ -50,6 +76,9 @@ private:
 	bool got_config_;
 	bool got_goal_;
 	bool got_path_;
+	
+	std::vector<Vertex> vertexs_;
+	std::vector<Edge> edges_;
 
 };
 

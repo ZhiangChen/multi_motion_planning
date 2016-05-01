@@ -32,7 +32,7 @@ void RRT::setGoal(geometry_msgs::PointStamped goal, int index)
 	int j;
 	for(j=0; j<nm_; j++)
 	{
-		if(!got_goal_table_[index])
+		if(!got_goal_table_[j])
 			break;
 	}
 	if(j==nm_)
@@ -58,6 +58,11 @@ void RRT::swapPositions()
 
 bool RRT::runRRT()
 {
+	if(!got_goal_)
+	{
+		ROS_ERROR("Invalid Goals!");
+		return false;
+	}
 	buildRRT();
 	extendRRT();
 	connectRRT();
@@ -85,21 +90,19 @@ void RRT::mapCallback(const nav_msgs::OccupancyGrid& map)
 {
 	ROS_INFO("Received the map."); 
 	map_ = map;
-	int width_px, height_px;
-	width_px = map_.info.width;
-	height_px = map_.info.height;
-	ROS_INFO("Width x Height: (%d x %d) pixels", width_px, height_px);
+	width_px_ = map_.info.width;
+	height_px_ = map_.info.height;
+	ROS_INFO("Width x Height: (%d x %d) pixels", width_px_, height_px_);
 	double x,y;
 	x = map_.info.origin.position.x;
 	y = map_.info.origin.position.y;
 	ROS_INFO("Origin: (%f, %f)", x, y);
-	double rsl;
-	rsl = map_.info.resolution;
-	ROS_INFO("Resoluntion: %f",rsl);
+	rsl_ = map_.info.resolution;
+	ROS_INFO("Resoluntion: %f",rsl_);
 	int n = map_.data.size();
 	ROS_INFO("Points: %d", n);
-	width_ = (width_px) * rsl;
-	height_ = (height_px) * rsl;
+	width_ = (width_px_) * rsl_;
+	height_ = (height_px_) * rsl_;
 	ROS_INFO("Width x Height: (%f x %f) meters", width_, height_);
 	got_map_ = true;
 }
@@ -111,8 +114,8 @@ void RRT::getCSpace()
 		cspace_.resize(d);
 		for (int j=0; j<d;)
 		{
-			cspace_[j++]= width_ - 2*safe_rds;
-			cspace_[j++]= height_ - 2*safe_rds;
+			cspace_[j++]= width_ - 2.0*safe_rds;
+			cspace_[j++]= height_ - 2.0*safe_rds;
 		}
 	#endif
 	ROS_INFO("Got C-Space with %d dimensionalities.", d);
@@ -171,15 +174,133 @@ bool RRT::buildRRT()
 {
 
 }
+
 bool RRT::extendRRT()
 {
 
 }
+
 bool RRT::connectRRT()
 {
 
 }
+
 bool RRT::mergeRRT()
 {
 
+}
+/********************************
+******    RRT  ASSISTANT  *******
+********************************/
+bool RRT::checkCollision(std::vector<geometry_msgs::PointStamped> robots)
+{
+	int rest;
+	double dist;
+	// check the collision among robots
+	for (int j=0; j<nm_; j++)
+	{
+		rest = nm_-j;
+		for (int i=1; i<rest; i++)
+		{
+			dist = getDistance(robots[j],robots[j+i]);
+			if (dist < safe_rds*2.0)
+			{
+				ROS_INFO("Got Collided!");
+				return false;
+			}
+		}
+	}
+	// check the collision between robots and objects
+	double theta = 2*M_PI/collision_check_pts;
+	double angle;
+	double  x,y;
+	int i_x,i_y; // indices of x,y
+	int occupancy;
+	for (int j=0; j<nm_; j++)
+	{
+		// 1. robots should be in c-space
+		if (robots[j].point.x<(0.0+safe_rds) || robots[j].point.x>(width_-safe_rds))
+		{
+			ROS_INFO("Out of C-Space!");
+			return false;
+		}
+		if (robots[j].point.y<(0.0+safe_rds) || robots[j].point.y>(height_-safe_rds))
+		{
+			ROS_INFO("Out of C-Space!");
+			return false;
+		} 
+
+		// 2. check the robot with the obstacles in map
+		for (int i=0; i<collision_check_pts; i++)
+		{
+			angle = theta*i;
+			x = robots[j].point.x + safe_rds*sin(angle); 
+			y = robots[j].point.y + safe_rds*cos(angle);
+			//cout<<x<<", "<<y<<endl; // display for debug
+			// Assume the map's origin is (0,0)!!
+			i_x = x/rsl_;
+			i_y = y/rsl_;
+			occupancy = int (map_.data[width_px_*(i_y)+i_x]);
+			if (occupancy==100)
+			{
+				ROS_INFO("Got Collided with the %d-th point on robot%d!",i,j);
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+double RRT::getDistance(geometry_msgs::PointStamped robot1, geometry_msgs::PointStamped robot2)
+{
+	double dist;
+	double d_x,d_y;
+	d_x = robot1.point.x - robot2.point.x;
+	d_y = robot1.point.y - robot2.point.y;
+	dist = sqrt(d_x*d_x + d_y*d_y);
+	return dist;
+}
+
+bool RRT::checkVertex(Vertex v)
+{
+	geometry_msgs::PointStamped robot = v.point;
+	// 1. robot should be in c-space
+	if (robot.point.x<(0.0+safe_rds) || robot.point.x>(width_-safe_rds))
+	{
+		ROS_INFO("Out of C-Space!");
+		return false;
+	}
+	if (robot.point.y<(0.0+safe_rds) || robot.point.y>(height_-safe_rds))
+	{
+		ROS_INFO("Out of C-Space!");
+		return false;
+	} 	
+	// 2. check the collision between robot and the obstacles in map
+	double theta = 2*M_PI/collision_check_pts;
+	double angle;
+	double  x,y;
+	int i_x,i_y; // indices of x,y
+	int occupancy;	
+	for (int i=0; i<collision_check_pts; i++)
+	{
+		angle = theta*i;
+		x = robot.point.x + safe_rds*sin(angle); 
+		y = robot.point.y + safe_rds*cos(angle);
+		//cout<<x<<", "<<y<<endl; // display for debug
+		// Assume the map's origin is (0,0)!!
+		i_x = x/rsl_;
+		i_y = y/rsl_;
+		occupancy = int (map_.data[width_px_*(i_y)+i_x]);
+		if (occupancy==100)
+		{
+			ROS_INFO("Vertex Got Collided!");
+			return false;
+		}
+	}
+	return true;
+}
+
+bool checkEdge(Edge edge)
+{
+	
 }

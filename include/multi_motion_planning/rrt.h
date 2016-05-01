@@ -39,10 +39,10 @@ SOFTWARE.*/
 
 #define SimpleRobot
 #ifdef SimpleRobot
-	#define robot_x 0.35;
-	#define robot_y 0.35;
-	#define robot_z 0.25;
-	#define safe_rds 0.5;
+	#define robot_x 0.35
+	#define robot_y 0.35
+	#define robot_z 0.25
+	#define safe_rds 0.25
 #endif
 
 #define Greedy
@@ -52,6 +52,8 @@ SOFTWARE.*/
 	#define step_size 0.2
 #endif
 
+// RRT parameters
+#define collision_check_pts 50
 
 struct Vertex
 {
@@ -82,12 +84,15 @@ public:
 	bool getPath(nav_msgs::Path &path);
 	bool getPaht2(nav_msgs::Path &path);
 	bool displayTrees();
-private:
+//private:
 	void getMap();
 	void mapCallback(const nav_msgs::OccupancyGrid& map);
 	void getCSpace();
 	void getInit();
-	bool checkCollision();
+	bool checkCollision(std::vector<geometry_msgs::PointStamped> robots);
+	double getDistance(geometry_msgs::PointStamped robot1, geometry_msgs::PointStamped robot2);
+	bool checkVertex(Vertex v);
+	bool checkEdge(Edge edge);
 	
 	bool buildRRT();
 	bool extendRRT();
@@ -103,7 +108,9 @@ private:
 	bool got_map_;
 	ros::Subscriber map_sub_;
 	nav_msgs::OccupancyGrid map_;
+	double rsl_;
 	double width_, height_;
+	int width_px_, height_px_;
 	std::vector<double> cspace_;
 	int n_q_rand_;
 	
@@ -111,8 +118,8 @@ private:
 	std::vector<geometry_msgs::PointStamped> init_;
 	std::vector<geometry_msgs::PointStamped> goal_;
 
-	std::vector<Vertex> vertexs_;
-	std::vector<Edge> edges_;
+	std::vector<Tree> T_init_; 
+	std::vector<Tree> T_goal_; 
 
 };
 

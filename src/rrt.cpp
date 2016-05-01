@@ -18,7 +18,7 @@ RRT::RRT(int nm, int n_q_rand):nm_(nm),n_q_rand_(n_q_rand)
     getMap();
     getCSpace();
     getInit();
-
+    srand(time(NULL));
 }
 
 void RRT::setGoal(geometry_msgs::PointStamped goal, int index)
@@ -211,7 +211,7 @@ bool RRT::checkCollision(std::vector<geometry_msgs::PointStamped> robots)
 		}
 	}
 	// check the collision between robots and objects
-	double theta = 2*M_PI/collision_check_pts;
+	double theta = 2.0*M_PI/collision_check_pts;
 	double angle;
 	double  x,y;
 	int i_x,i_y; // indices of x,y
@@ -261,9 +261,8 @@ double RRT::getDistance(geometry_msgs::PointStamped robot1, geometry_msgs::Point
 	return dist;
 }
 
-bool RRT::checkVertex(Vertex v)
+bool RRT::checkPoint(geometry_msgs::PointStamped robot)
 {
-	geometry_msgs::PointStamped robot = v.point;
 	// 1. robot should be in c-space
 	if (robot.point.x<(0.0+safe_rds) || robot.point.x>(width_-safe_rds))
 	{
@@ -276,7 +275,7 @@ bool RRT::checkVertex(Vertex v)
 		return false;
 	} 	
 	// 2. check the collision between robot and the obstacles in map
-	double theta = 2*M_PI/collision_check_pts;
+	double theta = 2.0*M_PI/collision_check_pts;
 	double angle;
 	double  x,y;
 	int i_x,i_y; // indices of x,y
@@ -293,14 +292,141 @@ bool RRT::checkVertex(Vertex v)
 		occupancy = int (map_.data[width_px_*(i_y)+i_x]);
 		if (occupancy==100)
 		{
-			ROS_INFO("Vertex Got Collided!");
+			ROS_INFO("Point Got Collided!");
 			return false;
 		}
 	}
 	return true;
 }
 
-bool checkEdge(Edge edge)
+bool RRT::checkLine(geometry_msgs::PointStamped point1, geometry_msgs::PointStamped point2)
 {
-	
+	int n;
+	double dist,step;
+	double d_x, d_y;
+	geometry_msgs::PointStamped Mid;
+	dist = getDistance(point1, point2);
+	n = dist/rsl_ + 1;
+	step = dist/n;
+	d_x = (point2.point.x - point1.point.x)/n;
+	d_y = (point2.point.y - point1.point.y)/n;
+	for (int j=0; j<n; j++)
+	{
+		Mid.point.x = point1.point.x + (j+1)*d_x;
+		Mid.point.y = point1.point.y + (j+1)*d_y;
+		if(!checkPoint(Mid))
+		{
+			ROS_INFO("Line Got Collided!");
+			//cout<<Mid.point.x<<", "<<Mid.point.y<<endl;
+			return false;
+		}
+	}
+	return true;
 }
+
+geometry_msgs::PointStamped RRT::randomPoint()
+{
+	geometry_msgs::PointStamped pt;
+	do
+	{
+		pt.point.x = rand()*width_/RAND_MAX;
+		pt.point.y = rand()*height_/RAND_MAX;
+	}while(!checkPoint(pt));
+	return pt;
+}
+
+bool RRT::checkVertex(Vertex v)
+{
+	int n=v.n;
+	// check if points are valid in map
+	for (int j=0; j<n; j++)
+	{
+		if(!checkPoint(v.point[j]))
+		{
+			ROS_INFO("Invalid Vertex!");
+			return false;
+		}
+	}
+
+	// check self-collision
+	int rest;
+	double dist;
+	// check the collision among robots
+	for (int j=0; j<n; j++)
+	{
+		rest = n-j;
+		for (int i=1; i<rest; i++)
+		{
+			dist = getDistance(v.point[j],v.point[j+i]);
+			if (dist < safe_rds*2.0+0.01)
+			{
+				ROS_INFO("Invalid Vertex!");
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+bool RRT::checkEdge(Edge e)
+{
+	int n = e.n;
+	// check lines are valid
+	double longest_dist=-1;
+	std::vector<double> dist;
+	dist.resize(n);
+	for(int j=0; j<n; j++)
+	{
+		if(!checkLine(e.start_vertex.point[j], e.end_vertex.point[j]))
+		{
+			ROS_INFO("Invalid Edge");
+			ROS_INFO("Invalid Line %d", j);
+			return false;
+		}
+		dist[j] = getDistance(e.start_vertex.point[j], e.end_vertex.point[j]);
+		if(dist[j]>longest_dist)
+		{
+			longest_dist = dist[j];
+		}
+	}
+	int n_s = longest_dist/rsl_ + 1; // the number of steps
+
+	std::vector<double> d_x,d_y;
+	d_x.resize(n);
+	d_y.resize(n);
+	for (int j=0; j<n; j++)
+	{
+		d_x[j] = (e.end_vertex.point[j].point.x - e.start_vertex.point[j].point.x)/n_s;
+		d_y[j] = (e.end_vertex.point[j].point.y - e.start_vertex.point[j].point.y)/n_s;
+	}
+
+	// check self-collision
+	Vertex Mid(n);
+	for (int i=0; i<n_s; i++)
+	{
+		for (int j=0; j<n; j++)
+		{
+			Mid.point[j].point.x = e.start_vertex.point[j].point.x + (i+1)*d_x[j];
+			Mid.point[j].point.y = e.start_vertex.point[j].point.y + (i+1)*d_y[j];
+ 		}		
+ 		if(!checkVertex(Mid))
+ 		{
+ 			ROS_INFO("Invalid Edge");
+			return false;
+ 		}
+	}
+	return true;
+
+}
+
+
+/*
+void RRT::getQrand(std::vector<geometry_msgs::PointStamped> &robots)
+{
+	robots.resize(nm_);
+	for(int j=0; j<nm_; j++)
+	{
+		robots[j]=randomPoint();
+	}
+	checkCollision(robots);
+}*/

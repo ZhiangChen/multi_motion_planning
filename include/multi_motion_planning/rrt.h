@@ -57,14 +57,24 @@ SOFTWARE.*/
 
 struct Vertex
 {
-	geometry_msgs::PointStamped point;
-	int connectivity;
+	Vertex(int d):n(d)
+	{
+		point.resize(n);
+		connectivity.resize(n);
+	};
+	int n;
+	std::vector<geometry_msgs::PointStamped> point;
+	std::vector<int> connectivity;
 };
+
 
 struct Edge
 {
-	geometry_msgs::PointStamped start_point;
-	geometry_msgs::PointStamped end_point;
+	Edge(int d):n(d),start_vertex(d),end_vertex(d)
+	{};
+	int n;
+	Vertex start_vertex;
+	Vertex end_vertex;
 };
 
 struct Tree
@@ -91,8 +101,13 @@ public:
 	void getInit();
 	bool checkCollision(std::vector<geometry_msgs::PointStamped> robots);
 	double getDistance(geometry_msgs::PointStamped robot1, geometry_msgs::PointStamped robot2);
+	bool checkPoint(geometry_msgs::PointStamped point);
+	bool checkLine(geometry_msgs::PointStamped point1, geometry_msgs::PointStamped point2);
+	geometry_msgs::PointStamped randomPoint();
 	bool checkVertex(Vertex v);
-	bool checkEdge(Edge edge);
+	bool checkEdge(Edge e);
+
+	void getQrand(std::vector<geometry_msgs::PointStamped> &robots);
 	
 	bool buildRRT();
 	bool extendRRT();

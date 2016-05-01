@@ -7,17 +7,70 @@ using namespace std;
 RRT::RRT(int nm, int n_q_rand):nm_(nm),n_q_rand_(n_q_rand)
 {
     got_map_ = false;
+    got_goal_table_.resize(nm_);
+    got_goal_ = false;
+    for(int j=0; j<nm_; j++)
+    {
+    	got_goal_table_[j] = false;
+    }
     init_.resize(nm_);
     goal_.resize(nm_);
     getMap();
     getCSpace();
     getInit();
+
 }
 
+void RRT::setGoal(geometry_msgs::PointStamped goal, int index)
+{
+	goal_[index] = goal;
+	got_goal_table_[index] = true;
+	double x,y;
+	x = goal_[index].point.x;
+	y = goal_[index].point.y;
+	ROS_INFO("The robot%d's goal position is (%f,%f).",index,x,y);
+	int j;
+	for(j=0; j<nm_; j++)
+	{
+		if(!got_goal_table_[index])
+			break;
+	}
+	if(j==nm_)
+		got_goal_ = true;
+}
 
+void RRT::swapPositions()
+{
+	int next;
+	double x,y;
+	for(int j=0; j<nm_; j++)
+	{
+		next = j+1;
+		if(next==nm_)
+			next=0;
+		goal_[j] = init_[next];
+		x = goal_[j].point.x;
+		y = goal_[j].point.y;
+		ROS_INFO("The robot%d's goal position is (%f,%f).",j,x,y);
+	}
+	got_goal_ = true;
+}
+
+bool RRT::runRRT()
+{
+	buildRRT();
+	extendRRT();
+	connectRRT();
+	mergeRRT();
+	return true;
+}
 /*****************************************************
 ***************     PRIVATE FUNCTIONS     ************               
 ******************************************************/
+
+/********************************
+******    CONFIGURTION    *******
+********************************/
 void RRT::getMap()
 {
 	map_sub_ = nh_.subscribe("/map",1,&RRT::mapCallback,this);
@@ -107,6 +160,26 @@ void RRT::getInit()
 	    double x,y;
 	    x = init_[j].point.x;
 	    y = init_[j].point.y;
-	    ROS_INFO("The robot%d's position is (%f,%f).",j,x,y);
+	    ROS_INFO("The robot%d's initial position is (%f,%f).",j,x,y);
 	}
+}
+
+/********************************
+******     RRT  KERNEL    *******
+********************************/
+bool RRT::buildRRT()
+{
+
+}
+bool RRT::extendRRT()
+{
+
+}
+bool RRT::connectRRT()
+{
+
+}
+bool RRT::mergeRRT()
+{
+
 }

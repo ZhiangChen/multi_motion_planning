@@ -77,6 +77,7 @@ class RRT
 public:
 	RRT(int nm, int n_q_rand);
 	void setGoal(geometry_msgs::PointStamped goal, int index);
+	void swapPositions();
 	bool runRRT();
 	bool getPath(nav_msgs::Path &path);
 	bool getPaht2(nav_msgs::Path &path);
@@ -88,13 +89,14 @@ private:
 	void getInit();
 	bool checkCollision();
 	
-	void buildRRT();
-	void extendRRT();
-	void connectRRT();
-	void mergeRRT();
+	bool buildRRT();
+	bool extendRRT();
+	bool connectRRT();
+	bool mergeRRT();
+	
 	
 	int nm_; 
-	bool got_config_;
+	std::vector<bool> got_goal_table_;
 	bool got_goal_;
 	bool got_path_;
 	ros::NodeHandle nh_;

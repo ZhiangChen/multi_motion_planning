@@ -14,6 +14,7 @@ int main(int argc, char **argv)
   ros::init(argc,argv,"maze2"); 
   ros::NodeHandle n; 
   RRT Rrt(2,5);
+  Rrt.swapPositions();
 
 
   return 0; 

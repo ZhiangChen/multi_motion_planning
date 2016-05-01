@@ -25,46 +25,67 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.*/
 
+#ifndef RRT_H_
+#define RRT_H_
+
+#include <ros/ros.h>
 #include <geometry_msgs/Point.h>
+#include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Path.h>
 #include <geometry_msgs/PolygonStamped.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <tf/transform_listener.h>
 
-#ifndef RRT_H_
-#define RRT_H_
+#define SimpleRobot
+#ifdef SimpleRobot
+	#define robot_x 0.35;
+	#define robot_y 0.35;
+	#define robot_z 0.25;
+	#define safe_rds 0.5;
+#endif
+
+#define Greedy
+#ifdef Greedy
+	#define step_size 1
+#else
+	#define step_size 0.2
+#endif
+
 
 struct Vertex
 {
 	geometry_msgs::PointStamped point;
 	int connectivity;
-}
+};
 
 struct Edge
 {
 	geometry_msgs::PointStamped start_point;
 	geometry_msgs::PointStamped end_point;
-}
+};
 
 struct Tree
 {
 	std::vector<Vertex> vertexs;
 	std::vector<Edge> edges;
 	nav_msgs::Path getTree();
-}
+};
 
 class RRT
 {
 public:
-	RRT(int nm);
-	void configInit(int n_q_rand, double step_size);
-	void setGoal(geometry_msgs::PoseStamped goal, int index);
+	RRT(int nm, int n_q_rand);
+	void setGoal(geometry_msgs::PointStamped goal, int index);
 	bool runRRT();
 	bool getPath(nav_msgs::Path &path);
 	bool getPaht2(nav_msgs::Path &path);
 	bool displayTrees();
 private:
 	void getMap();
+	void mapCallback(const nav_msgs::OccupancyGrid& map);
 	void getCSpace();
+	void getInit();
 	bool checkCollision();
 	
 	void buildRRT();
@@ -76,7 +97,18 @@ private:
 	bool got_config_;
 	bool got_goal_;
 	bool got_path_;
+	ros::NodeHandle nh_;
+	bool got_map_;
+	ros::Subscriber map_sub_;
+	nav_msgs::OccupancyGrid map_;
+	double width_, height_;
+	std::vector<double> cspace_;
+	int n_q_rand_;
 	
+
+	std::vector<geometry_msgs::PointStamped> init_;
+	std::vector<geometry_msgs::PointStamped> goal_;
+
 	std::vector<Vertex> vertexs_;
 	std::vector<Edge> edges_;
 

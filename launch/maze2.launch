@@ -5,6 +5,7 @@
 <node pkg="map_server" type="map_server" name="map_server" args="$(find multi_motion_planning)/world/maze/maze.yaml"/>
 <node pkg="tf" type="static_transform_publisher" name="map_to_robot0" args="2 2 0 0 0 0 map /robot0/odom0 10"/>
 <node pkg="tf" type="static_transform_publisher" name="map_to_robot1" args="2 7 0 0 0 0 map /robot1/odom1 10"/>
+<node pkg="multi_motion_planning" type="maze2" name="maze2" output="screen"/>
 </launch>
 
 

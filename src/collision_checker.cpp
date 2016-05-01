@@ -30,7 +30,7 @@ void myCallback(const nav_msgs::OccupancyGrid& map)
   ROS_INFO("Points: %d", n);
   g_width = (g_width_px+1) * g_rsl;
   g_height = (g_height_px+1) * g_rsl;
-  ROS_INFO("Width x Height: (%d x %d) meters", g_width, g_height;
+  ROS_INFO("Width x Height: (%f x %f) meters", g_width, g_height);
   got_map = true;
 } 
 

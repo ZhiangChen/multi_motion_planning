@@ -19,6 +19,9 @@ RRT::RRT(int nm, int n_q_rand):nm_(nm),n_q_rand_(n_q_rand)
     getCSpace();
     getInit();
     srand(time(NULL));
+    connected_ = false;
+    T_init_.id = "Init_Tree";
+    T_goal_.id = "Goal_Tree";
 }
 
 void RRT::setGoal(geometry_msgs::PointStamped goal, int index)
@@ -64,9 +67,24 @@ bool RRT::runRRT()
 		return false;
 	}
 	buildRRT();
-	extendRRT();
-	connectRRT();
-	mergeRRT();
+	int i=0;
+	Vertex Qrand(2);
+	do
+	{
+		getRandomVertex(Qrand);
+		if(extendRRT(T_init_,Qrand))
+			mergeRRT(T_goal_,Qrand);
+		getRandomVertex(Qrand);
+		if(extendRRT(T_goal_,Qrand))
+			mergeRRT(T_init_,Qrand);
+		if(i++ > 10000)
+		{
+			ROS_ERROR("Time out!");
+			return false;
+		}	
+		connected_=true;	
+	}while(!connected_);
+
 	return true;
 }
 /*****************************************************
@@ -172,22 +190,84 @@ void RRT::getInit()
 ********************************/
 bool RRT::buildRRT()
 {
-
+	Vertex V_init(nm_);
+	Vertex V_goal(nm_);
+	V_init.point = init_;
+	V_goal.point = goal_;
+	T_init_.vertexs.push_back(V_init);
+	T_goal_.vertexs.push_back(V_goal);
+	Vertex Qrand(nm_);
+	for(int j=0; j<n_q_rand_; j++)
+	{
+		do
+		{
+			getRandomVertex(Qrand);
+		}while(extendRRT(T_init_,Qrand));
+		
+	}
 }
 
-bool RRT::extendRRT()
+bool RRT::extendRRT(Tree &t, Vertex &Qrand)
 {
+	int d= Qrand.n;
+	Vertex Qnear(d);
+	Vertex Qnew(d);
+	Qnear = findClosestVertex(t,Qrand);
+	// 1. try to connect Qnear and Qrand
+	Edge e(d);
+	e.start_vertex = Qnear;
+	e.end_vertex = Qrand;
+	if(checkEdge(e))
+	{
+		t.vertexs.push_back(Qrand);
+		t.edges.push_back(e);
+		return true;
+	}
+	// or 2. try to connect Qnear and Qnew
+	std::vector<double> d_x;
+	std::vector<double> d_y;
+	d_x.resize(d);
+	d_y.resize(d);
+	Qnew = Qnear;
+	for (int j=0; j<d; j++)
+	{
+		d_x[j] = Qnear.point[j].point.x - Qrand.point[j].point.x;
+		d_y[j] = Qnear.point[j].point.y - Qrand.point[j].point.y;
 
+		Qnew.point[j].point.x += d_x[j]*step_size;
+		Qnew.point[j].point.y += d_y[j]*step_size;
+	}
+	if(!checkVertex(Qnew))
+	{
+		return false;
+	}
+	e.start_vertex = Qnear;
+	e.end_vertex = Qnew;
+	if(!checkEdge(e))
+	{
+		return false;
+	}
+	t.vertexs.push_back(Qrand);
+	t.edges.push_back(e);
+	Qrand = Qnew;
+	return true;
 }
 
-bool RRT::connectRRT()
+
+void RRT::mergeRRT(Tree &t, Vertex v)
 {
-
-}
-
-bool RRT::mergeRRT()
-{
-
+	int d=v.n;
+	Vertex Qnear(d);
+	Qnear = findClosestVertex(t,v);
+	Edge e(d);
+	e.start_vertex = Qnear;
+	e.end_vertex = v;
+	if(checkEdge(e))
+	{
+		connected_ = true;
+		t.vertexs.push_back(v);
+		t.edges.push_back(e);
+	}
 }
 /********************************
 ******    RRT  ASSISTANT  *******
@@ -324,17 +404,6 @@ bool RRT::checkLine(geometry_msgs::PointStamped point1, geometry_msgs::PointStam
 	return true;
 }
 
-geometry_msgs::PointStamped RRT::randomPoint()
-{
-	geometry_msgs::PointStamped pt;
-	do
-	{
-		pt.point.x = rand()*width_/RAND_MAX;
-		pt.point.y = rand()*height_/RAND_MAX;
-	}while(!checkPoint(pt));
-	return pt;
-}
-
 bool RRT::checkVertex(Vertex v)
 {
 	int n=v.n;
@@ -416,17 +485,79 @@ bool RRT::checkEdge(Edge e)
  		}
 	}
 	return true;
+}
+
+geometry_msgs::PointStamped RRT::randomPoint()
+{
+	geometry_msgs::PointStamped pt;
+	do
+	{
+		pt.point.x = rand()*width_/RAND_MAX;
+		pt.point.y = rand()*height_/RAND_MAX;
+	}while(!checkPoint(pt));
+	return pt;
+}
+
+void RRT::getRandomVertex(Vertex &v)
+{
+	int n = v.n;
+	do
+	{
+		for (int j=0; j<n; j++)
+		{
+			v.point[j] = randomPoint();
+		}		
+	}while(!checkVertex(v));
 
 }
 
-
-/*
-void RRT::getQrand(std::vector<geometry_msgs::PointStamped> &robots)
+Vertex RRT::findClosestVertex(Tree t, Vertex v)
 {
-	robots.resize(nm_);
-	for(int j=0; j<nm_; j++)
+	int d = v.n;
+	Vertex c_v(d);
+	int n = t.vertexs.size();
+	double shortest_dist=1000;
+	double dist;
+	std::vector<double> d_x;
+	std::vector<double> d_y;
+	d_x.resize(d);
+	d_y.resize(d);
+	for (int j=0; j<n; j++)
 	{
-		robots[j]=randomPoint();
+		dist = 0;
+		for (int i=0; i<d; i++)
+		{
+			d_x[i] = t.vertexs[j].point[i].point.x - v.point[i].point.x;
+			d_y[i] = t.vertexs[j].point[i].point.y - v.point[i].point.y;
+			dist = dist + d_x[i]*d_x[i] + d_y[i]*d_y[i];
+		}
+		dist=sqrt(dist);
+		if (dist<shortest_dist)
+		{
+			shortest_dist = dist;
+			c_v = t.vertexs[j];
+		}
 	}
-	checkCollision(robots);
-}*/
+	return c_v;
+}
+
+/*****************************************************
+***************    STRUCTURE FUNCTIONS    ************               
+******************************************************/
+void Vertex::displayVertex()
+{
+	for (int i=0; i<n; i++)
+	{
+		cout<<"Robot"<<i<<" : "<<"("<<point[i].point.x<<", "<<point[i].point.y<<")"<<endl;
+	}
+	cout<<"Connectivity: "<<connectivity <<endl;
+}
+
+void Tree::displayInfo()
+{
+	cout<<"Name: "<<id<<endl;
+	cout<<"Connection: "<<connection<<endl;
+	cout<<"Connected tree: "<<partner_id<<endl;
+	cout<<"The number of vertexs: "<<vertexs.size()<<endl;
+	cout<<"The number of edges: "<<edges.size()<<endl;
+}

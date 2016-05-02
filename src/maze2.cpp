@@ -14,11 +14,15 @@ int main(int argc, char **argv)
 	ros::init(argc,argv,"maze2"); 
 	ros::NodeHandle n; 
 	RRT Rrt(2,5);
-	//Rrt.swapPositions();
-	char a;
-	geometry_msgs::PointStamped robot0,robot1;
-while(ros::ok())
-{	
+	Rrt.swapPositions();
+	Rrt.runRRT();
+
+
+
+	return 0; 
+} 
+
+
 	/* // test checkPoint
 	cout<<"robot0 x,y";
 	cin>>robot0.point.x>>robot0.point.y;
@@ -47,7 +51,7 @@ while(ros::ok())
 	v.point[1]=robot1;
 	Rrt.checkVertex(v);*/
 
-	// test checkEdge
+	/*// test checkEdge
 	cout<<"start: "<<endl;
 	cout<<"robot0 x,y: ";
 	cin>>robot0.point.x>>robot0.point.y;
@@ -67,12 +71,48 @@ while(ros::ok())
 	Edge e(2);
 	e.start_vertex = s_v;
 	e.end_vertex = e_v;
-	Rrt.checkEdge(e);
+	Rrt.checkEdge(e);*/
 
-}
+	/*//test getRandomVertex
+	Vertex v(2);
+	Rrt.getRandomVertex(v);
+	v.displayVertex();
+	cin>>a;*/
 
+	/*// test findClosestVertex
+geometry_msgs::PointStamped robot0,robot1;
+while(ros::ok())
+{
+	cout<<"v1: "<<endl;
+	cout<<"robot0 x,y: ";
+	cin>>robot0.point.x>>robot0.point.y;
+	cout<<"robot1 x,y: ";
+	cin>>robot1.point.x>>robot1.point.y;
+	Vertex v1(2);
+	v1.point[0] = robot0;
+	v1.point[1] = robot1;
+	cout<<"v2: "<<endl;
+	cout<<"robot0 x,y: ";
+	cin>>robot0.point.x>>robot0.point.y;
+	cout<<"robot1 x,y: ";
+	cin>>robot1.point.x>>robot1.point.y;
+	Vertex v2(2);
+	v2.point[0] = robot0;
+	v2.point[1] = robot1;
+	cout<<"v3: "<<endl;
+	cout<<"robot0 x,y: ";
+	cin>>robot0.point.x>>robot0.point.y;
+	cout<<"robot1 x,y: ";
+	cin>>robot1.point.x>>robot1.point.y;
+	Vertex v3(2);
+	v3.point[0] = robot0;
+	v3.point[1] = robot1;
 
+	Tree t;
+	t.vertexs.push_back(v1);
+	t.vertexs.push_back(v2);
+	Vertex c_v(2);
+	c_v = Rrt.findClosestVertex(t,v3);
+	c_v.displayVertex();
 
-
-	return 0; 
-} 
+}*/

@@ -36,6 +36,7 @@ SOFTWARE.*/
 #include <geometry_msgs/PolygonStamped.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <tf/transform_listener.h>
+#include <string>
 
 #define SimpleRobot
 #ifdef SimpleRobot
@@ -45,32 +46,29 @@ SOFTWARE.*/
 	#define safe_rds 0.25
 #endif
 
-#define Greedy
-#ifdef Greedy
-	#define step_size 1
-#else
-	#define step_size 0.2
-#endif
 
+	
 // RRT parameters
 #define collision_check_pts 50
+#define step_size 0.2
 
 struct Vertex
 {
-	Vertex(int d):n(d)
+	Vertex(int d):n(d) // the number of the robots
 	{
 		point.resize(n);
-		connectivity.resize(n);
+		connectivity = 0;
 	};
 	int n;
 	std::vector<geometry_msgs::PointStamped> point;
-	std::vector<int> connectivity;
+	int connectivity;
+	void displayVertex();
 };
 
 
 struct Edge
 {
-	Edge(int d):n(d),start_vertex(d),end_vertex(d)
+	Edge(int d):n(d),start_vertex(d),end_vertex(d) // the number of the robots
 	{};
 	int n;
 	Vertex start_vertex;
@@ -79,9 +77,19 @@ struct Edge
 
 struct Tree
 {
+	Tree()
+	{
+		id = "None";
+		partner_id = "None";
+		connection = false;
+	}
+	std::string id;
+	std::string partner_id;
+	bool connection;
 	std::vector<Vertex> vertexs;
 	std::vector<Edge> edges;
 	nav_msgs::Path getTree();
+	void displayInfo();
 };
 
 class RRT
@@ -106,13 +114,12 @@ public:
 	geometry_msgs::PointStamped randomPoint();
 	bool checkVertex(Vertex v);
 	bool checkEdge(Edge e);
-
-	void getQrand(std::vector<geometry_msgs::PointStamped> &robots);
+	void getRandomVertex(Vertex &v);
+	Vertex findClosestVertex(Tree t, Vertex v);
 	
 	bool buildRRT();
-	bool extendRRT();
-	bool connectRRT();
-	bool mergeRRT();
+	bool extendRRT(Tree &t, Vertex &v);
+	void mergeRRT(Tree &t, Vertex v);
 	
 	
 	int nm_; 
@@ -121,6 +128,7 @@ public:
 	bool got_path_;
 	ros::NodeHandle nh_;
 	bool got_map_;
+	bool connected_;
 	ros::Subscriber map_sub_;
 	nav_msgs::OccupancyGrid map_;
 	double rsl_;
@@ -132,10 +140,11 @@ public:
 
 	std::vector<geometry_msgs::PointStamped> init_;
 	std::vector<geometry_msgs::PointStamped> goal_;
-
-	std::vector<Tree> T_init_; 
-	std::vector<Tree> T_goal_; 
+	
+	Tree T_init_; 
+	Tree T_goal_; 
 
 };
+
 
 #endif

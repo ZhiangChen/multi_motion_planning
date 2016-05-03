@@ -58,8 +58,10 @@ struct Vertex
 	{
 		point.resize(n);
 		connectivity = 0;
+		parent = -2;
 	};
 	int n;
+	int parent;
 	std::vector<geometry_msgs::PointStamped> point;
 	int connectivity;
 	void displayVertex();
@@ -73,6 +75,7 @@ struct Edge
 	int n;
 	Vertex start_vertex;
 	Vertex end_vertex;
+	void displayEdge();
 };
 
 struct Tree
@@ -88,7 +91,8 @@ struct Tree
 	bool connection;
 	std::vector<Vertex> vertexs;
 	std::vector<Edge> edges;
-	nav_msgs::Path getTree();
+	void getPath(std::vector<nav_msgs::Path> &path);
+	void displayTree();
 	void displayInfo();
 };
 
@@ -99,9 +103,10 @@ public:
 	void setGoal(geometry_msgs::PointStamped goal, int index);
 	void swapPositions();
 	bool runRRT();
-	bool getPath(nav_msgs::Path &path);
+	bool getPath();
+	bool getPath(std::vector<nav_msgs::Path> &Path);
 	bool getPaht2(nav_msgs::Path &path);
-	bool displayTrees();
+	void displayPath();
 //private:
 	void getMap();
 	void mapCallback(const nav_msgs::OccupancyGrid& map);
@@ -115,11 +120,12 @@ public:
 	bool checkVertex(Vertex v);
 	bool checkEdge(Edge e);
 	void getRandomVertex(Vertex &v);
-	Vertex findClosestVertex(Tree t, Vertex v);
-	
+	int findClosestVertex(Tree t, Vertex v); // return the index of closest vertex
+	std::vector<nav_msgs::Path> path_;
+
 	bool buildRRT();
 	bool extendRRT(Tree &t, Vertex &v);
-	void mergeRRT(Tree &t, Vertex v);
+	bool mergeRRT(Tree &t, Vertex v);
 	
 	
 	int nm_; 
@@ -136,6 +142,7 @@ public:
 	int width_px_, height_px_;
 	std::vector<double> cspace_;
 	int n_q_rand_;
+	std::vector<ros::Publisher> path_pub_;
 	
 
 	std::vector<geometry_msgs::PointStamped> init_;

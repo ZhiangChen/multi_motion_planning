@@ -2,6 +2,7 @@
 #include <ros/ros.h>
 #include <stdlib.h>
 #include <string>
+
 using namespace std;
 
 RRT::RRT(int nm, int n_q_rand):nm_(nm),n_q_rand_(n_q_rand)
@@ -22,6 +23,15 @@ RRT::RRT(int nm, int n_q_rand):nm_(nm),n_q_rand_(n_q_rand)
     connected_ = false;
     T_init_.id = "Init_Tree";
     T_goal_.id = "Goal_Tree";
+    path_pub_.resize(nm_);
+    std::vector<string> topic;
+	topic.resize(nm_);
+	for (int j=0; j<nm_; j++)
+	{
+		topic[j]="path"+boost::to_string(j);
+		path_pub_[j]=nh_.advertise<nav_msgs::Path>(topic[j],1,true);
+	}
+	got_path_ = false;
 }
 
 void RRT::setGoal(geometry_msgs::PointStamped goal, int index)
@@ -68,24 +78,135 @@ bool RRT::runRRT()
 	}
 	buildRRT();
 	int i=0;
-	Vertex Qrand(2);
+	Vertex Qrand(nm_);
 	do
 	{
 		getRandomVertex(Qrand);
 		if(extendRRT(T_init_,Qrand))
-			mergeRRT(T_goal_,Qrand);
+			if(mergeRRT(T_goal_,Qrand))
+				break;
 		getRandomVertex(Qrand);
 		if(extendRRT(T_goal_,Qrand))
-			mergeRRT(T_init_,Qrand);
+			if(mergeRRT(T_init_,Qrand))
+				break;
 		if(i++ > 10000)
 		{
 			ROS_ERROR("Time out!");
 			return false;
-		}	
-		connected_=true;	
+		}		
 	}while(!connected_);
-
+	ROS_INFO("Connected! %d iterations", i);
+	
+	T_init_.connection = true;
+	T_init_.partner_id = "Goal_Tree";
+	T_goal_.connection = true;
+	T_goal_.partner_id = "Init_Tree";
+	T_init_.displayInfo();
+	T_goal_.displayInfo();
+	std::vector<nav_msgs::Path> path;
+	T_init_.getPath(path);
 	return true;
+}
+
+bool RRT::getPath()
+{
+	if (!connected_)
+	{
+		ROS_ERROR("Cannot get path without connected tree!");
+		return false;
+	}
+	//ROS_INFO("Getting path");
+	std::vector<nav_msgs::Path> P_init, P_goal, Path;
+	Path.resize(nm_);
+	T_init_.getPath(P_init);
+	T_goal_.getPath(P_goal);
+	int pts_i = P_init[0].poses.size();
+	int pts_g = P_goal[0].poses.size();
+	int pts = pts_i + pts_g;
+	for (int j=0; j<nm_; j++)
+	{
+		Path[j].header.frame_id = "map";
+		Path[j].poses.resize(pts);
+	}
+	// integrate init path
+	for (int j=0; j<pts_i; j++)
+	{
+		for (int i=0; i<nm_; i++)
+		{
+			Path[i].poses[j].pose.position
+			= P_init[i].poses[pts_i-1-j].pose.position;
+			Path[i].poses[j].header.frame_id = "map";
+		}
+	}
+	// integrate goal path
+	for (int j=pts_i; j<pts; j++)
+	{
+		for (int i=0; i<nm_; i++)
+		{
+			Path[i].poses[j].pose.position
+			= P_goal[i].poses[j-pts_i].pose.position;
+			Path[i].poses[j].header.frame_id = "map";
+		}
+	}
+	path_ = Path;
+	got_path_ = true;	
+}
+
+bool RRT::getPath(std::vector<nav_msgs::Path> &Path)
+{
+	if (!connected_)
+	{
+		ROS_ERROR("Cannot get path without connected tree!");
+		return false;
+	}
+	std::vector<nav_msgs::Path> P_init, P_goal;
+	Path.resize(nm_);
+	T_init_.getPath(P_init);
+	T_goal_.getPath(P_goal);
+	int pts_i = P_init[0].poses.size();
+	int pts_g = P_goal[0].poses.size();
+	int pts = pts_i + pts_g;
+	for (int j=0; j<nm_; j++)
+	{
+		Path[j].header.frame_id = "map";
+		Path[j].poses.resize(pts);
+	}
+	// integrate init path
+	for (int j=0; j<pts_i; j++)
+	{
+		for (int i=0; i<nm_; i++)
+		{
+			Path[i].poses[j].pose.position
+			= P_init[i].poses[pts_i-1-j].pose.position;
+			Path[i].poses[j].header.frame_id = "map";
+		}
+	}
+	// integrate goal path
+	for (int j=pts_i; j<pts; j++)
+	{
+		for (int i=0; i<nm_; i++)
+		{
+			Path[i].poses[j].pose.position
+			= P_goal[i].poses[j-pts_i].pose.position;
+			Path[i].poses[j].header.frame_id = "map";
+		}
+	}
+	path_ = Path;
+	got_path_ = true;
+	return true;
+}
+
+void RRT::displayPath()
+{
+	if(!got_path_)
+	{
+		ROS_ERROR("Cannot display path without getting the path");
+		return;
+	}
+	for (int j=0; j<nm_; j++)
+	{
+		path_pub_[j].publish(path_[j]);
+	}
 }
 /*****************************************************
 ***************     PRIVATE FUNCTIONS     ************               
@@ -194,6 +315,10 @@ bool RRT::buildRRT()
 	Vertex V_goal(nm_);
 	V_init.point = init_;
 	V_goal.point = goal_;
+	V_init.connectivity = 1;
+	V_goal.connectivity = 1;
+	V_init.parent = -1;
+	V_goal.parent = -1;
 	T_init_.vertexs.push_back(V_init);
 	T_goal_.vertexs.push_back(V_goal);
 	Vertex Qrand(nm_);
@@ -202,9 +327,17 @@ bool RRT::buildRRT()
 		do
 		{
 			getRandomVertex(Qrand);
-		}while(extendRRT(T_init_,Qrand));
-		
+		}while(!extendRRT(T_init_,Qrand));
+
+		do
+		{
+			getRandomVertex(Qrand);
+		}while(!extendRRT(T_goal_,Qrand));
 	}
+	T_init_.displayInfo();
+	T_goal_.displayInfo();
+	T_init_.displayTree();
+	T_goal_.displayTree();
 }
 
 bool RRT::extendRRT(Tree &t, Vertex &Qrand)
@@ -212,15 +345,19 @@ bool RRT::extendRRT(Tree &t, Vertex &Qrand)
 	int d= Qrand.n;
 	Vertex Qnear(d);
 	Vertex Qnew(d);
-	Qnear = findClosestVertex(t,Qrand);
+	int index = findClosestVertex(t,Qrand);
+	Qnear = t.vertexs[index];
 	// 1. try to connect Qnear and Qrand
 	Edge e(d);
 	e.start_vertex = Qnear;
 	e.end_vertex = Qrand;
 	if(checkEdge(e))
 	{
+		Qrand.connectivity++;
+		Qrand.parent = index;
 		t.vertexs.push_back(Qrand);
 		t.edges.push_back(e);
+		t.vertexs[index].connectivity++;
 		return true;
 	}
 	// or 2. try to connect Qnear and Qnew
@@ -228,14 +365,14 @@ bool RRT::extendRRT(Tree &t, Vertex &Qrand)
 	std::vector<double> d_y;
 	d_x.resize(d);
 	d_y.resize(d);
-	Qnew = Qnear;
+	//Qnew = Qnear;
 	for (int j=0; j<d; j++)
 	{
-		d_x[j] = Qnear.point[j].point.x - Qrand.point[j].point.x;
-		d_y[j] = Qnear.point[j].point.y - Qrand.point[j].point.y;
+		d_x[j] = Qrand.point[j].point.x - Qnear.point[j].point.x;
+		d_y[j] = Qrand.point[j].point.y - Qnear.point[j].point.y;
 
-		Qnew.point[j].point.x += d_x[j]*step_size;
-		Qnew.point[j].point.y += d_y[j]*step_size;
+		Qnew.point[j].point.x = Qnear.point[j].point.x + d_x[j]*step_size;
+		Qnew.point[j].point.y = Qnear.point[j].point.y + d_y[j]*step_size;
 	}
 	if(!checkVertex(Qnew))
 	{
@@ -247,27 +384,38 @@ bool RRT::extendRRT(Tree &t, Vertex &Qrand)
 	{
 		return false;
 	}
-	t.vertexs.push_back(Qrand);
+	Qnew.connectivity++;
+	Qnew.parent = index;
+	t.vertexs.push_back(Qnew);
 	t.edges.push_back(e);
+	t.vertexs[index].connectivity++;
 	Qrand = Qnew;
 	return true;
 }
 
 
-void RRT::mergeRRT(Tree &t, Vertex v)
+bool RRT::mergeRRT(Tree &t, Vertex v)
 {
 	int d=v.n;
 	Vertex Qnear(d);
-	Qnear = findClosestVertex(t,v);
+	Vertex Qrand(d);
+	Qrand = v;
+	int index = findClosestVertex(t,v);
+	Qnear = t.vertexs[index];
 	Edge e(d);
 	e.start_vertex = Qnear;
-	e.end_vertex = v;
+	e.end_vertex = Qrand;
 	if(checkEdge(e))
 	{
 		connected_ = true;
-		t.vertexs.push_back(v);
+		Qrand.connectivity++;
+		Qrand.parent = index;
+		t.vertexs.push_back(Qrand);
 		t.edges.push_back(e);
+		t.vertexs[index].connectivity++;
+		return true;
 	}
+	return false;
 }
 /********************************
 ******    RRT  ASSISTANT  *******
@@ -511,10 +659,9 @@ void RRT::getRandomVertex(Vertex &v)
 
 }
 
-Vertex RRT::findClosestVertex(Tree t, Vertex v)
+int RRT::findClosestVertex(Tree t, Vertex v)
 {
 	int d = v.n;
-	Vertex c_v(d);
 	int n = t.vertexs.size();
 	double shortest_dist=1000;
 	double dist;
@@ -522,6 +669,7 @@ Vertex RRT::findClosestVertex(Tree t, Vertex v)
 	std::vector<double> d_y;
 	d_x.resize(d);
 	d_y.resize(d);
+	int index;
 	for (int j=0; j<n; j++)
 	{
 		dist = 0;
@@ -535,10 +683,10 @@ Vertex RRT::findClosestVertex(Tree t, Vertex v)
 		if (dist<shortest_dist)
 		{
 			shortest_dist = dist;
-			c_v = t.vertexs[j];
+			index = j;
 		}
 	}
-	return c_v;
+	return index;
 }
 
 /*****************************************************
@@ -553,6 +701,14 @@ void Vertex::displayVertex()
 	cout<<"Connectivity: "<<connectivity <<endl;
 }
 
+void Edge::displayEdge()
+{
+	cout<<"start: "<<endl;
+	start_vertex.displayVertex();
+	cout<<"end: "<<endl;
+	end_vertex.displayVertex();
+}
+
 void Tree::displayInfo()
 {
 	cout<<"Name: "<<id<<endl;
@@ -560,4 +716,63 @@ void Tree::displayInfo()
 	cout<<"Connected tree: "<<partner_id<<endl;
 	cout<<"The number of vertexs: "<<vertexs.size()<<endl;
 	cout<<"The number of edges: "<<edges.size()<<endl;
+}
+
+
+void Tree::getPath(std::vector<nav_msgs::Path> &path)
+{
+	int n = vertexs.size();
+	if (n<2)
+	{
+		ROS_ERROR("Cannot get the path from 1 vertex!");
+		return;
+	}
+	cout<<"Init: "<<endl;
+	vertexs[0].displayVertex();
+	cout<<"Goal: "<<endl;
+	vertexs[n-1].displayVertex();
+	int d = vertexs[0].point.size();
+	geometry_msgs::PoseStamped pose;
+	path.resize(d);
+	Vertex current_v = vertexs[n-1];
+	ROS_INFO("Getting Path...");
+	cout<<id<<endl;
+	for (int j=0; j<d; j++)
+	{
+		current_v = vertexs[n-1];
+		while(1)
+		{
+			pose.pose.position = current_v.point[j].point;
+			path[j].poses.push_back(pose);
+			current_v.displayVertex();
+			current_v = vertexs[current_v.parent];
+			if(current_v.parent == -1)
+			{
+				pose.pose.position = current_v.point[j].point;
+				path[j].poses.push_back(pose);
+				current_v.displayVertex();
+				break;
+			}
+		}		
+	}
+
+	ROS_INFO("Got Path");
+}
+
+void Tree::displayTree()
+{
+	cout<<".........................."<<endl;
+	cout<<"Tree name: "<<id<<endl;
+	int n = vertexs.size();
+	cout<<"Vertex: "<<endl;
+	for (int j=0; j<n; j++)
+	{
+		vertexs[j].displayVertex();
+	}
+	n = edges.size();
+	cout<<"Edge: "<<endl;
+	for (int j=0; j<n; j++)
+	{
+		edges[j].displayEdge();
+	}
 }

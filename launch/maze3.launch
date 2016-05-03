@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <launch>
 <node pkg="stage_ros" type="stageros" name="stageros" args="$(find multi_motion_planning)/world/stage/maze3.world"/>
-<node pkg="rviz" type="rviz" name="rviz" args="$(find multi_motion_planning)/rviz/maze2.rviz"/>
+<node pkg="rviz" type="rviz" name="rviz" args="$(find multi_motion_planning)/rviz/maze3.rviz"/>
 <node pkg="map_server" type="map_server" name="map_server" args="$(find multi_motion_planning)/world/maze/maze.yaml"/>
 <node pkg="tf" type="static_transform_publisher" name="map_to_robot0" args="2 2 0 0 0 0 map /robot0/odom0 10"/>
 <node pkg="tf" type="static_transform_publisher" name="map_to_robot1" args="2 7 0 0 0 0 map /robot1/odom1 10"/>

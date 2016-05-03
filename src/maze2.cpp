@@ -13,11 +13,15 @@ int main(int argc, char **argv)
 { 
 	ros::init(argc,argv,"maze2"); 
 	ros::NodeHandle n; 
-	RRT Rrt(2,5);
+	RRT Rrt(2,3);
 	Rrt.swapPositions();
 	Rrt.runRRT();
-
-
+	Rrt.getPath();
+	while(ros::ok())
+	{
+		Rrt.displayPath();
+		ros::Duration(0.1).sleep();
+	}
 
 	return 0; 
 } 
@@ -116,3 +120,42 @@ while(ros::ok())
 	c_v.displayVertex();
 
 }*/
+
+		// test extendRRT
+/*geometry_msgs::PointStamped robot0,robot1;
+while(ros::ok())
+{
+	cout<<"v1: "<<endl;
+	cout<<"robot0 x,y: ";
+	cin>>robot0.point.x>>robot0.point.y;
+	cout<<"robot1 x,y: ";
+	cin>>robot1.point.x>>robot1.point.y;
+	Vertex v1(2);
+	v1.point[0] = robot0;
+	v1.point[1] = robot1;
+	cout<<"v2: "<<endl;
+	cout<<"robot0 x,y: ";
+	cin>>robot0.point.x>>robot0.point.y;
+	cout<<"robot1 x,y: ";
+	cin>>robot1.point.x>>robot1.point.y;
+	Vertex v2(2);
+	v2.point[0] = robot0;
+	v2.point[1] = robot1;
+	cout<<"v3: "<<endl;
+	cout<<"robot0 x,y: ";
+	cin>>robot0.point.x>>robot0.point.y;
+	cout<<"robot1 x,y: ";
+	cin>>robot1.point.x>>robot1.point.y;
+	Vertex v3(2);
+	v3.point[0] = robot0;
+	v3.point[1] = robot1;
+
+	Tree t;
+	t.vertexs.push_back(v1);
+	t.vertexs.push_back(v2);
+	
+	if(Rrt.extendRRT(t,v3))
+		t.displayTree();
+
+}
+*/

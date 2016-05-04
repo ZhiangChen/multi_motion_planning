@@ -81,15 +81,15 @@ bool RRT::runRRT()
 	Vertex Qrand(nm_);
 	do
 	{
-		getRandomVertex(Qrand);
+		getRandomVertex(Qrand, T_goal_.vertexs[0]);
 		if(extendRRT(T_init_,Qrand))
 			if(mergeRRT(T_goal_,Qrand))
 				break;
-		getRandomVertex(Qrand);
+		getRandomVertex(Qrand, T_init_.vertexs[0]);
 		if(extendRRT(T_goal_,Qrand))
 			if(mergeRRT(T_init_,Qrand))
 				break;
-		if(i++ > 10000)
+		if(i++ > 500000)
 		{
 			ROS_ERROR("Time out!");
 			return false;
@@ -326,18 +326,18 @@ bool RRT::buildRRT()
 	{
 		do
 		{
-			getRandomVertex(Qrand);
+			getRandomVertex(Qrand, T_goal_.vertexs[0]);
 		}while(!extendRRT(T_init_,Qrand));
 
 		do
 		{
-			getRandomVertex(Qrand);
+			getRandomVertex(Qrand, T_init_.vertexs[0]);
 		}while(!extendRRT(T_goal_,Qrand));
 	}
-	T_init_.displayInfo();
-	T_goal_.displayInfo();
-	T_init_.displayTree();
-	T_goal_.displayTree();
+	//T_init_.displayInfo();
+	//T_goal_.displayInfo();
+	//T_init_.displayTree();
+	//T_goal_.displayTree();
 }
 
 bool RRT::extendRRT(Tree &t, Vertex &Qrand)
@@ -494,12 +494,12 @@ bool RRT::checkPoint(geometry_msgs::PointStamped robot)
 	// 1. robot should be in c-space
 	if (robot.point.x<(0.0+safe_rds) || robot.point.x>(width_-safe_rds))
 	{
-		ROS_INFO("Out of C-Space!");
+		//ROS_INFO("Out of C-Space!");
 		return false;
 	}
 	if (robot.point.y<(0.0+safe_rds) || robot.point.y>(height_-safe_rds))
 	{
-		ROS_INFO("Out of C-Space!");
+		//ROS_INFO("Out of C-Space!");
 		return false;
 	} 	
 	// 2. check the collision between robot and the obstacles in map
@@ -520,7 +520,7 @@ bool RRT::checkPoint(geometry_msgs::PointStamped robot)
 		occupancy = int (map_.data[width_px_*(i_y)+i_x]);
 		if (occupancy==100)
 		{
-			ROS_INFO("Point Got Collided!");
+			//ROS_INFO("Point Got Collided!");
 			return false;
 		}
 	}
@@ -544,7 +544,7 @@ bool RRT::checkLine(geometry_msgs::PointStamped point1, geometry_msgs::PointStam
 		Mid.point.y = point1.point.y + (j+1)*d_y;
 		if(!checkPoint(Mid))
 		{
-			ROS_INFO("Line Got Collided!");
+			//ROS_INFO("Line Got Collided!");
 			//cout<<Mid.point.x<<", "<<Mid.point.y<<endl;
 			return false;
 		}
@@ -560,7 +560,7 @@ bool RRT::checkVertex(Vertex v)
 	{
 		if(!checkPoint(v.point[j]))
 		{
-			ROS_INFO("Invalid Vertex!");
+			//ROS_INFO("Invalid Vertex!");
 			return false;
 		}
 	}
@@ -577,7 +577,7 @@ bool RRT::checkVertex(Vertex v)
 			dist = getDistance(v.point[j],v.point[j+i]);
 			if (dist < safe_rds*2.0+0.01)
 			{
-				ROS_INFO("Invalid Vertex!");
+				//ROS_INFO("Invalid Vertex!");
 				return false;
 			}
 		}
@@ -596,8 +596,8 @@ bool RRT::checkEdge(Edge e)
 	{
 		if(!checkLine(e.start_vertex.point[j], e.end_vertex.point[j]))
 		{
-			ROS_INFO("Invalid Edge");
-			ROS_INFO("Invalid Line %d", j);
+			//ROS_INFO("Invalid Edge");
+			//ROS_INFO("Invalid Line %d", j);
 			return false;
 		}
 		dist[j] = getDistance(e.start_vertex.point[j], e.end_vertex.point[j]);
@@ -628,7 +628,7 @@ bool RRT::checkEdge(Edge e)
  		}		
  		if(!checkVertex(Mid))
  		{
- 			ROS_INFO("Invalid Edge");
+ 			//ROS_INFO("Invalid Edge");
 			return false;
  		}
 	}
@@ -646,8 +646,16 @@ geometry_msgs::PointStamped RRT::randomPoint()
 	return pt;
 }
 
-void RRT::getRandomVertex(Vertex &v)
+void RRT::getRandomVertex(Vertex &v, Vertex goal)
 {
+	static int i = 0;
+	if(++i == 20)
+	{
+		v = goal;
+		i = 0;
+		//cout<<"goal as random"<<endl;
+		return;
+	}
 	int n = v.n;
 	do
 	{
@@ -727,15 +735,15 @@ void Tree::getPath(std::vector<nav_msgs::Path> &path)
 		ROS_ERROR("Cannot get the path from 1 vertex!");
 		return;
 	}
-	cout<<"Init: "<<endl;
+/*	cout<<"Init: "<<endl;
 	vertexs[0].displayVertex();
 	cout<<"Goal: "<<endl;
-	vertexs[n-1].displayVertex();
+	vertexs[n-1].displayVertex();*/
 	int d = vertexs[0].point.size();
 	geometry_msgs::PoseStamped pose;
 	path.resize(d);
 	Vertex current_v = vertexs[n-1];
-	ROS_INFO("Getting Path...");
+	//ROS_INFO("Getting Path...");
 	cout<<id<<endl;
 	for (int j=0; j<d; j++)
 	{
@@ -744,13 +752,13 @@ void Tree::getPath(std::vector<nav_msgs::Path> &path)
 		{
 			pose.pose.position = current_v.point[j].point;
 			path[j].poses.push_back(pose);
-			current_v.displayVertex();
+			//current_v.displayVertex();
 			current_v = vertexs[current_v.parent];
 			if(current_v.parent == -1)
 			{
 				pose.pose.position = current_v.point[j].point;
 				path[j].poses.push_back(pose);
-				current_v.displayVertex();
+			//	current_v.displayVertex();
 				break;
 			}
 		}		

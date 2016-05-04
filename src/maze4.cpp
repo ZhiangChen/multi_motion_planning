@@ -11,9 +11,9 @@ using namespace std;
 
 int main(int argc, char **argv) 
 { 
-	ros::init(argc,argv,"maze3"); 
+	ros::init(argc,argv,"maze4"); 
 	ros::NodeHandle n; 
-	RRT Rrt(3,5);
+	RRT Rrt(4,5);
 	Rrt.swapPositions();
 	ros::Time t_s = ros::Time::now();
 	Rrt.runRRT();

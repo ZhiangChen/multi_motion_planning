@@ -11,20 +11,19 @@ using namespace std;
 
 int main(int argc, char **argv) 
 { 
-	ros::init(argc,argv,"maze3"); 
+	ros::init(argc,argv,"maze5"); 
 	ros::NodeHandle n; 
-	RRT Rrt(3,5);
+	RRT Rrt(5,3);
 	Rrt.swapPositions();
 	ros::Time t_s = ros::Time::now();
 	Rrt.runRRT();
 	Rrt.getPath();
 	ros::Time t_e = ros::Time::now();
 	cout<<t_e-t_s<<endl;
-//	geometry_msgs::PointStamped robot0,robot1,robot2;
 	while(ros::ok())
 	{
 		Rrt.displayPath();
-		ros::Duration(0.1).sleep();
+		ros::Duration(1).sleep();
 	}
 
 	return 0; 

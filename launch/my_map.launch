@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<launch>
+<node pkg="stage_ros" type="stageros" name="stageros" args="$(find multi_motion_planning)/world/stage/my_map.world"/>
+<node pkg="rviz" type="rviz" name="rviz" args="$(find multi_motion_planning)/rviz/maze2.rviz"/>
+<node pkg="map_server" type="map_server" name="map_server" args="$(find multi_motion_planning)/world/my_map/my_map.yaml"/>
+<node pkg="tf" type="static_transform_publisher" name="map_to_robot0" args="2 2 0 0 0 0 map /robot0/odom0 10"/>
+<node pkg="tf" type="static_transform_publisher" name="map_to_robot1" args="2 7 0 0 0 0 map /robot1/odom1 10"/>
+<node pkg="tf" type="static_transform_publisher" name="map_to_robot2" args="2 9 0 0 0 0 map /robot2/odom2 10"/>
+<node pkg="tf" type="static_transform_publisher" name="map_to_robot3" args="7.5 10.5 0 0 0 0 map /robot3/odom3 10"/>
+<node pkg="tf" type="static_transform_publisher" name="map_to_robot4" args="12 1 0 0 0 0 map /robot4/odom4 10"/>
+<node pkg="tf" type="static_transform_publisher" name="map_to_robot5" args="18 8 0 0 0 0 map /robot5/odom5 10"/>
+<node pkg="tf" type="static_transform_publisher" name="map_to_robot6" args="23 12 0 0 0 0 map /robot6/odom6 10"/>
+<node pkg="tf" type="static_transform_publisher" name="map_to_robot7" args="21 1 0 0 0 0 map /robot7/odom7 10"/>
+<node pkg="multi_motion_planning" type="my_map" name="my_map" output="screen"/>
+</launch>
+
+

@@ -15,8 +15,11 @@ int main(int argc, char **argv)
 	ros::NodeHandle n; 
 	RRT Rrt(2,3);
 	Rrt.swapPositions();
+	ros::Time t_s = ros::Time::now();
 	Rrt.runRRT();
 	Rrt.getPath();
+	ros::Time t_e = ros::Time::now();
+	cout<<t_e-t_s<<endl;
 	while(ros::ok())
 	{
 		Rrt.displayPath();

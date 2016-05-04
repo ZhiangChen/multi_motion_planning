@@ -49,7 +49,7 @@ SOFTWARE.*/
 
 	
 // RRT parameters
-#define collision_check_pts 50
+#define collision_check_pts 20
 #define step_size 0.2
 
 struct Vertex
@@ -119,7 +119,7 @@ public:
 	geometry_msgs::PointStamped randomPoint();
 	bool checkVertex(Vertex v);
 	bool checkEdge(Edge e);
-	void getRandomVertex(Vertex &v);
+	void getRandomVertex(Vertex &v, Vertex goal);
 	int findClosestVertex(Tree t, Vertex v); // return the index of closest vertex
 	std::vector<nav_msgs::Path> path_;
 

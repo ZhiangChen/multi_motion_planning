@@ -34,6 +34,7 @@ cs_add_executable(maze2 src/maze2.cpp src/rrt.cpp)
 cs_add_executable(maze3 src/maze3.cpp src/rrt.cpp)
 cs_add_executable(maze4 src/maze4.cpp src/rrt.cpp)
 cs_add_executable(maze5 src/maze5.cpp src/rrt.cpp)
+cs_add_executable(simple_world src/simple_world.cpp src/rrt.cpp)
 cs_add_executable(my_map src/my_map.cpp src/rrt.cpp)
 
 #the following is required, if desire to link a node in this package with a library created in this same package

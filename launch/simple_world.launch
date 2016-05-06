@@ -8,7 +8,6 @@
 <node pkg="tf" type="static_transform_publisher" name="map_to_robot2" args="2 9 0 0 0 0 map /robot2/odom2 10"/>
 <node pkg="tf" type="static_transform_publisher" name="map_to_robot3" args="6 7 0 0 0 0 map /robot3/odom3 10"/>
 <node pkg="tf" type="static_transform_publisher" name="map_to_robot4" args="5 4.5 0 0 0 0 map /robot4/odom4 10"/>
-<node pkg="multi_motion_planning" type="maze5" name="maze5" output="screen"/>
 </launch>
 
 
